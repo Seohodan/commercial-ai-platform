@@ -6,11 +6,6 @@
     <title>Commercial AI Experimentation Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="/static/styles.css">
-    <!-- Add this to prevent Jinja from processing Vue syntax -->
-    <script>
-        var EXPERIMENTS = {{ experiments|tojson }};
-        var USERS = {{ users|tojson }};
-    </script>
 </head>
 <body>
     <div id="app" class="layout" v-cloak>
@@ -401,7 +396,8 @@
                                 {{ selectedExperiment.confidence.toFixed(1) }}%
                             </div>
                             <div style="font-size: 0.8rem; color: #666;">
-                                {{ selectedExperiment.confidence >= 95 ? 'Statistically significant' : 'Not yet significant' }}
+                                <span v-if="selectedExperiment.confidence >= 95">Statistically significant</span>
+                                <span v-else>Not yet significant</span>
                             </div>
                         </div>
                         
@@ -440,7 +436,8 @@
                     <button class="btn" @click="closeViewExperimentModal">Close</button>
                     <button class="btn btn-primary" @click="toggleExperimentState">
                         <i class="fas" :class="selectedExperiment.state === 'Running' ? 'fa-stop' : 'fa-play'"></i>
-                        {{ selectedExperiment.state === 'Running' ? 'Stop' : 'Start' }}
+                        <span v-if="selectedExperiment.state === 'Running'">Stop</span>
+                        <span v-else>Start</span>
                     </button>
                 </div>
             </div>
@@ -687,4 +684,3 @@
     </script>
 </body>
 </html>
-                    
