@@ -1,0 +1,688 @@
+# HTML content as a string
+INDEX_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commercial AI Experimentation Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div id="app" class="layout">
+        <div class="sidebar">
+            <div class="sidebar-logo">BusinessAI</div>
+            <div class="sidebar-nav">
+                <a href="#" class="sidebar-nav-item active" @click.prevent="setCurrentView('experiments')">
+                    <i class="fas fa-flask"></i>
+                    <span>Experiments</span>
+                </a>
+                <a href="#" class="sidebar-nav-item" @click.prevent="setCurrentView('results')">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Results</span>
+                </a>
+                <a href="#" class="sidebar-nav-item" @click.prevent="setCurrentView('calendar')">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="#" class="sidebar-nav-item" @click.prevent="setCurrentView('settings')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+            <div class="sidebar-footer">
+                <div style="display: flex; align-items: center;">
+                    <div class="avatar" style="background-color: var(--color-primary);">
+                        JD
+                    </div>
+                    <div style="margin-left: 10px;">
+                        <div style="font-weight: 500; font-size: 0.9rem;">John Doe</div>
+                        <div style="font-size: 0.75rem; color: #666;">Head of AI Initiatives</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Experiments View -->
+            <div v-if="currentView === 'experiments'">
+                <div class="header">
+                    <h1>AI Experiments</h1>
+                    <button class="btn btn-primary" @click="openNewExperimentModal">
+                        <i class="fas fa-plus"></i> New Experiment
+                    </button>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-group">
+                        <select v-model="filters.state">
+                            <option value="Any">State: Any</option>
+                            <option value="Running">Running</option>
+                            <option value="Stopped">Stopped</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Archived">Archived</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select v-model="filters.department">
+                            <option value="Any">Department: Any</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Procurement">Procurement</option>
+                            <option value="Operations">Operations</option>
+                            <option value="IT">IT</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select v-model="filters.stage">
+                            <option value="Any">Stage: Any</option>
+                            <option value="Discovery">Discovery</option>
+                            <option value="Pre-launch">Pre-launch</option>
+                            <option value="Phase 1">Phase 1</option>
+                            <option value="Phase 2">Phase 2</option>
+                            <option value="Phase 3">Phase 3</option>
+                            <option value="Pilot">Pilot</option>
+                            <option value="Scale">Scale</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select v-model="filters.owner">
+                            <option value="Any">Owner: Any</option>
+                            <option v-for="user in users" :value="user.id">{{ user.name }}</option>
+                        </select>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" placeholder="Search experiments..." v-model="filters.search">
+                    </div>
+                </div>
+
+                <div v-if="loading" class="loading">
+                    <div class="spinner"></div>
+                </div>
+                <div v-else-if="experiments.length === 0" style="text-align: center; padding: 40px;">
+                    <p>No experiments found matching your filters</p>
+                    <button class="btn btn-outline" @click="resetFilters">Clear Filters</button>
+                </div>
+                <table v-else class="experiments-table">
+                    <thead>
+                        <tr>
+                            <th>NAME</th>
+                            <th>IMPACT</th>
+                            <th>CONFIDENCE</th>
+                            <th>PROGRESS</th>
+                            <th>PARTICIPANTS ⏱ DURATION</th>
+                            <th>OWNERS</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="exp in experiments" :key="exp.id" @click="viewExperiment(exp)">
+                            <td>
+                                <div style="display: flex; align-items: flex-start;">
+                                    <div>
+                                        <div style="font-weight: 500;">{{ exp.name }}</div>
+                                        <div style="font-size: 0.8rem; margin-top: 4px;">
+                                            <span :class="'department-badge department-' + exp.department.toLowerCase()">{{ exp.department }}</span>
+                                            <span style="color: #666;">{{ exp.experimentType }}</span>
+                                            <span 
+                                                :class="'badge badge-' + exp.state.toLowerCase()"
+                                                style="margin-left: 8px;"
+                                            >
+                                                {{ exp.state }}
+                                            </span>
+                                            <span style="margin-left: 8px; font-size: 0.75rem; padding: 2px 6px; background-color: #e0f2ff; color: #0078d4; border-radius: 4px;">
+                                                {{ exp.stage }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="impact-indicator">
+                                    <div 
+                                        :class="'impact-value ' + (exp.impact.value >= 0 ? 'positive' : 'negative')"
+                                    >
+                                        {{ exp.impact.value >= 0 ? '+' : '' }}{{ exp.impact.value.toFixed(2) }}%
+                                    </div>
+                                    <div class="impact-bounds">
+                                        <span>{{ exp.impact.negativeBound.toFixed(2) }}%</span>
+                                        <div class="impact-bounds-line">
+                                            <div 
+                                                class="impact-bounds-marker" 
+                                                :style="{left: 50 + (exp.impact.value / 2) + '%'}"
+                                            ></div>
+                                        </div>
+                                        <span>+{{ exp.impact.positiveBound.toFixed(2) }}%</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div 
+                                    class="progress-circle" 
+                                    :class="{'complete': exp.confidence >= 95}"
+                                >
+                                    {{ exp.confidence.toFixed(1) }}%
+                                </div>
+                            </td>
+                            <td>
+                                <div 
+                                    class="progress-circle"
+                                    :class="{'complete': exp.progress === 100}"
+                                >
+                                    {{ exp.progress }}%
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div style="display: flex; align-items: center;">
+                                        {{ exp.participants.count.toLocaleString() }}
+                                        <span v-if="exp.participants.sampleSizeReached" 
+                                            style="background-color: #d4edda; color: #155724; font-size: 0.7rem; margin-left: 8px; padding: 2px 6px; border-radius: 4px;">
+                                            <i class="fas fa-check" style="margin-right: 3px;"></i> Sample size reached
+                                        </span>
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #666; margin-top: 4px;">
+                                        {{ exp.duration.weeks }}w {{ exp.duration.days }}d
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="avatar-group">
+                                    <div class="avatar" v-for="(owner, idx) in exp.owners.slice(0, 2)" :key="idx" 
+                                         :style="{ backgroundColor: getAvatarColor(owner.name) }">
+                                        {{ getInitials(owner.name) }}
+                                    </div>
+                                    <div class="avatar" v-if="exp.owners.length > 2">
+                                        +{{ exp.owners.length - 2 }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="text-align: right;">
+                                    <button class="btn" @click.stop="showMenu(exp)" style="background: none;">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Other views would go here -->
+            <div v-if="currentView !== 'experiments'" style="padding: 40px; text-align: center;">
+                <h2>{{ currentView.charAt(0).toUpperCase() + currentView.slice(1) }}</h2>
+                <p>This view is not implemented in the MVP.</p>
+            </div>
+        </div>
+
+        <!-- New Experiment Modal -->
+        <div v-if="showNewExperimentModal" class="modal-backdrop">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">New AI Experiment</h3>
+                    <button class="modal-close" @click="closeNewExperimentModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="createExperiment">
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Experiment Name *</label>
+                                    <input type="text" class="form-control" v-model="newExperiment.name" required>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Department</label>
+                                    <select class="form-control" v-model="newExperiment.department">
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="Sales">Sales</option>
+                                        <option value="Procurement">Procurement</option>
+                                        <option value="Operations">Operations</option>
+                                        <option value="IT">IT</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Experiment Type</label>
+                                    <select class="form-control" v-model="newExperiment.experimentType">
+                                        <option value="Fixed Horizon">Fixed Horizon</option>
+                                        <option value="Group Sequential">Group Sequential</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Initial State</label>
+                                    <select class="form-control" v-model="newExperiment.state">
+                                        <option value="Running">Running</option>
+                                        <option value="Stopped">Stopped</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Stage</label>
+                                    <select class="form-control" v-model="newExperiment.stage">
+                                        <option value="Discovery">Discovery</option>
+                                        <option value="Pre-launch">Pre-launch</option>
+                                        <option value="Phase 1">Phase 1</option>
+                                        <option value="Phase 2">Phase 2</option>
+                                        <option value="Phase 3">Phase 3</option>
+                                        <option value="Pilot">Pilot</option>
+                                        <option value="Scale">Scale</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Significance</label>
+                                    <select class="form-control" v-model="newExperiment.significance">
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Analysis Type</label>
+                                    <select class="form-control" v-model="newExperiment.analysisType">
+                                        <option value="A/B Test">A/B Test</option>
+                                        <option value="Multivariate">Multivariate</option>
+                                        <option value="Feature Flag">Feature Flag</option>
+                                        <option value="Vendor Comparison">Vendor Comparison</option>
+                                        <option value="Custom">Custom</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Target Sample Size</label>
+                                    <input type="number" class="form-control" v-model.number="newExperiment.participants.target" min="10" max="50">
+                                    <small class="form-text text-muted">For internal tests, sample size is typically under 50</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Expected Duration (Weeks)</label>
+                                    <input type="number" class="form-control" v-model.number="newExperiment.duration.weeks" min="3" max="20">
+                                    <small class="form-text text-muted">Typically between 3-20 weeks</small>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Owners</label>
+                                    <select class="form-control" v-model="newExperiment.ownerIds" multiple style="height: 80px;">
+                                        <option v-for="user in users" :value="user.id">{{ user.name }} ({{ user.department }})</option>
+                                    </select>
+                                    <small class="form-text text-muted">Select one or more owners</small>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" @click="closeNewExperimentModal">Cancel</button>
+                    <button class="btn btn-primary" @click="createExperiment" :disabled="!newExperiment.name">
+                        Create Experiment
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Experiment Modal -->
+        <div v-if="showViewExperimentModal && selectedExperiment" class="modal-backdrop">
+            <div class="modal" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">{{ selectedExperiment.name }}</h3>
+                    <button class="modal-close" @click="closeViewExperimentModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <span :class="'department-badge department-' + selectedExperiment.department.toLowerCase()">{{ selectedExperiment.department }}</span>
+                            <span>{{ selectedExperiment.experimentType }}</span>
+                            <span 
+                                :class="'badge badge-' + selectedExperiment.state.toLowerCase()"
+                                style="margin-left: 8px;"
+                            >
+                                {{ selectedExperiment.state }}
+                            </span>
+                            <span style="margin-left: 8px; font-size: 0.75rem; padding: 2px 6px; background-color: #e0f2ff; color: #0078d4; border-radius: 4px;">
+                                {{ selectedExperiment.stage }}
+                            </span>
+                        </div>
+                        <div style="margin-left: auto;">
+                            <div class="avatar-group">
+                                <div class="avatar" v-for="(owner, idx) in selectedExperiment.owners" :key="idx"
+                                     :style="{ backgroundColor: getAvatarColor(owner.name) }">
+                                    {{ getInitials(owner.name) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                        <div style="padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
+                            <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">Impact</div>
+                            <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 5px;"
+                                :style="{ color: selectedExperiment.impact.value >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }">
+                                {{ selectedExperiment.impact.value >= 0 ? '+' : '' }}{{ selectedExperiment.impact.value.toFixed(2) }}%
+                            </div>
+                            <div style="font-size: 0.8rem; color: #666;">
+                                <i class="fas" :class="selectedExperiment.impact.value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'"
+                                    :style="{ color: selectedExperiment.impact.value >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }"></i>
+                                {{ selectedExperiment.impact.negativeBound.toFixed(2) }}% to +{{ selectedExperiment.impact.positiveBound.toFixed(2) }}%
+                            </div>
+                        </div>
+                        
+                        <div style="padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
+                            <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">Confidence</div>
+                            <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 5px;">
+                                {{ selectedExperiment.confidence.toFixed(1) }}%
+                            </div>
+                            <div style="font-size: 0.8rem; color: #666;">
+                                {{ selectedExperiment.confidence >= 95 ? 'Statistically significant' : 'Not yet significant' }}
+                            </div>
+                        </div>
+                        
+                        <div style="padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
+                            <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">Participants</div>
+                            <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 5px;">
+                                {{ selectedExperiment.participants.count.toLocaleString() }}
+                            </div>
+                            <div style="font-size: 0.8rem; color: #666;">
+                                {{ selectedExperiment.participants.sampleSizeReached 
+                                    ? 'Sample size reached' 
+                                    : 'Target: ' + selectedExperiment.participants.target.toLocaleString() }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="border-top: 1px solid var(--color-gray); padding-top: 20px;">
+                        <div style="display: flex; margin-bottom: 15px;">
+                            <button class="btn" style="margin-right: 10px; background-color: var(--color-gray-light); font-weight: 500;">Results</button>
+                            <button class="btn" style="margin-right: 10px; font-weight: 500;">Configuration</button>
+                            <button class="btn" style="margin-right: 10px; font-weight: 500;">History</button>
+                            <button class="btn" style="margin-right: 10px; font-weight: 500;">Compliance</button>
+                        </div>
+                        
+                        <div style="padding: 15px; background-color: #f9f9f9; border-radius: 4px; min-height: 200px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                            <p style="font-weight: 500; margin-bottom: 10px;">Experiment Business Impact Metrics</p>
+                            <div style="width: 100%; height: 150px; background-color: #e9ecef; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.9rem;">
+                                Business metrics visualization would appear here
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" style="margin-right: auto; color: var(--color-danger);" @click="deleteExperiment">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                    <button class="btn" @click="closeViewExperimentModal">Close</button>
+                    <button class="btn btn-primary" @click="toggleExperimentState">
+                        <i class="fas" :class="selectedExperiment.state === 'Running' ? 'fa-stop' : 'fa-play'"></i>
+                        {{ selectedExperiment.state === 'Running' ? 'Stop' : 'Start' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                currentView: 'experiments',
+                experiments: [],
+                users: [],
+                loading: true,
+                filters: {
+                    state: 'Any',
+                    significance: 'Any',
+                    owner: 'Any',
+                    analysisType: 'Any',
+                    stage: 'Any',
+                    department: 'Any',
+                    search: ''
+                },
+                showNewExperimentModal: false,
+                showViewExperimentModal: false,
+                selectedExperiment: null,
+                newExperiment: {
+                    name: '',
+                    experimentType: 'Fixed Horizon',
+                    state: 'Running',
+                    stage: 'Discovery',
+                    department: 'Marketing',
+                    significance: 'Medium',
+                    analysisType: 'A/B Test',
+                    impact: {
+                        value: 0,
+                        positiveBound: 0,
+                        negativeBound: 0
+                    },
+                    participants: {
+                        target: 30,
+                        sampleSizeReached: false
+                    },
+                    ownerIds: [],
+                    duration: {
+                        weeks: 8,
+                        days: 0
+                    }
+                }
+            },
+            created() {
+                this.fetchUsers();
+                this.fetchExperiments();
+            },
+            watch: {
+                filters: {
+                    deep: true,
+                    handler() {
+                        this.fetchExperiments();
+                    }
+                }
+            },
+            methods: {
+                getInitials(name) {
+                    if (!name) return '';
+                    return name
+                        .split(' ')
+                        .map(part => part.charAt(0))
+                        .join('')
+                        .toUpperCase();
+                },
+                getAvatarColor(name) {
+                    // Generate a consistent color based on the name
+                    let hash = 0;
+                    for (let i = 0; i < name.length; i++) {
+                        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    
+                    const colors = [
+                        '#0078D4', // Blue
+                        '#107C10', // Green
+                        '#D83B01', // Orange
+                        '#8764B8', // Purple
+                        '#00B294', // Teal
+                        '#881798', // Magenta
+                        '#038387', // Cyan
+                    ];
+                    
+                    // Use the hash to pick a color
+                    const index = Math.abs(hash) % colors.length;
+                    return colors[index];
+                },
+                setCurrentView(view) {
+                    this.currentView = view;
+                },
+                fetchExperiments() {
+                    this.loading = true;
+                    
+                    // Build query string from filters
+                    const queryParams = new URLSearchParams();
+                    if (this.filters.state !== 'Any') queryParams.append('state', this.filters.state);
+                    if (this.filters.significance !== 'Any') queryParams.append('significance', this.filters.significance);
+                    if (this.filters.owner !== 'Any') queryParams.append('owner', this.filters.owner);
+                    if (this.filters.analysisType !== 'Any') queryParams.append('analysisType', this.filters.analysisType);
+                    if (this.filters.stage !== 'Any') queryParams.append('stage', this.filters.stage);
+                    if (this.filters.department !== 'Any') queryParams.append('department', this.filters.department);
+                    if (this.filters.search) queryParams.append('search', this.filters.search);
+                    
+                    axios.get(`/api/experiments?${queryParams.toString()}`)
+                        .then(response => {
+                            this.experiments = response.data.experiments;
+                            this.loading = false;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching experiments:', error);
+                            this.loading = false;
+                        });
+                },
+                fetchUsers() {
+                    axios.get('/api/users')
+                        .then(response => {
+                            this.users = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching users:', error);
+                        });
+                },
+                resetFilters() {
+                    this.filters = {
+                        state: 'Any',
+                        significance: 'Any',
+                        owner: 'Any',
+                        analysisType: 'Any',
+                        stage: 'Any',
+                        department: 'Any',
+                        search: ''
+                    };
+                },
+                openNewExperimentModal() {
+                    this.newExperiment = {
+                        name: '',
+                        experimentType: 'Fixed Horizon',
+                        state: 'Running',
+                        stage: 'Discovery',
+                        department: 'Marketing',
+                        significance: 'Medium',
+                        analysisType: 'A/B Test',
+                        impact: {
+                            value: 0,
+                            positiveBound: 0,
+                            negativeBound: 0
+                        },
+                        participants: {
+                            target: 30,
+                            sampleSizeReached: false
+                        },
+                        ownerIds: [],
+                        duration: {
+                            weeks: 8,
+                            days: 0
+                        }
+                    };
+                    this.showNewExperimentModal = true;
+                },
+                closeNewExperimentModal() {
+                    this.showNewExperimentModal = false;
+                },
+                createExperiment() {
+                    if (!this.newExperiment.name) {
+                        alert('Experiment name is required');
+                        return;
+                    }
+                    
+                    // Create a copy of the experiment data to avoid Vue reactivity issues
+                    const experimentData = JSON.parse(JSON.stringify(this.newExperiment));
+                    
+                    // Convert ownerIds to array format expected by API
+                    experimentData.owners = experimentData.ownerIds || [];
+                    delete experimentData.ownerIds;
+                    
+                    axios.post('/api/experiments', experimentData)
+                        .then(response => {
+                            this.fetchExperiments();
+                            this.closeNewExperimentModal();
+                            alert('Experiment created successfully');
+                        })
+                        .catch(error => {
+                            console.error('Error creating experiment:', error);
+                            alert('Failed to create experiment: ' + error.message);
+                        });
+                },
+                viewExperiment(experiment) {
+                    this.selectedExperiment = JSON.parse(JSON.stringify(experiment));
+                    this.showViewExperimentModal = true;
+                },
+                closeViewExperimentModal() {
+                    this.showViewExperimentModal = false;
+                    this.selectedExperiment = null;
+                },
+                toggleExperimentState() {
+                    if (!this.selectedExperiment) return;
+                    
+                    const newState = this.selectedExperiment.state === 'Running' ? 'Stopped' : 'Running';
+                    
+                    axios.put(`/api/experiments/${this.selectedExperiment.id}`, {
+                        state: newState
+                    })
+                    .then(response => {
+                        this.selectedExperiment.state = newState;
+                        this.fetchExperiments();
+                    })
+                    .catch(error => {
+                        console.error('Error updating experiment state:', error);
+                        alert('Failed to update experiment state');
+                    });
+                },
+                deleteExperiment() {
+                    if (!this.selectedExperiment) return;
+                    
+                    if (!confirm('Are you sure you want to delete this experiment?')) {
+                        return;
+                    }
+                    
+                    axios.delete(`/api/experiments/${this.selectedExperiment.id}`)
+                        .then(response => {
+                            this.closeViewExperimentModal();
+                            this.fetchExperiments();
+                            alert('Experiment deleted successfully');
+                        })
+                        .catch(error => {
+                            console.error('Error deleting experiment:', error);
+                            alert('Failed to delete experiment');
+                        });
+                },
+                showMenu(experiment) {
+                    // This would show a dropdown menu with actions
+                    // For simplicity in this MVP, we'll just open the view modal
+                    this.viewExperiment(experiment);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+"""
