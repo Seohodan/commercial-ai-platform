@@ -5,6 +5,11 @@ import os
 import json
 import datetime
 import random
+import os
+
+# Check if we're running on Render
+IS_PRODUCTION = os.environ.get('RENDER', False)
+
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -334,16 +339,21 @@ os.makedirs(os.path.join(basedir, 'templates'), exist_ok=True)
 
 # Create DB tables and sample data
 def init_db():
-    # Only create the database if it doesn't exist
     db_path = os.path.join(basedir, 'commercial_ai_experiments.db')
-    if not os.path.exists(db_path):  # CHANGE THIS LINE!
+    
+    # In production (on Render), don't recreate the database every time
+    if IS_PRODUCTION:
+        # Just make sure tables exist
+        with app.app_context():
+            db.create_all()
+    else:
+        # In development (your computer), you might want to start fresh
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        
         with app.app_context():
             db.create_all()
             # Add your sample data here
-    else:
-        # Database exists, just make sure tables are created
-        with app.app_context():
-            db.create_all()
         
         # Create sample users with departments
         users = [
