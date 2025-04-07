@@ -330,13 +330,16 @@ os.makedirs(os.path.join(basedir, 'templates'), exist_ok=True)
 
 # Create DB tables and sample data
 def init_db():
-    # Force recreate the database to ensure we have the sample data
+    # Only create the database if it doesn't exist
     db_path = os.path.join(basedir, 'commercial_ai_experiments.db')
-    if os.path.exists(db_path):
-        os.remove(db_path)
-
-    with app.app_context():
-        db.create_all()
+    if not os.path.exists(db_path):  # CHANGE THIS LINE!
+        with app.app_context():
+            db.create_all()
+            # Add your sample data here
+    else:
+        # Database exists, just make sure tables are created
+        with app.app_context():
+            db.create_all()
         
         # Create sample users with departments
         users = [
