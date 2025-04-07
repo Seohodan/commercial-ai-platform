@@ -1,15 +1,7 @@
-# Commercial AI Experimentation Platform
-# Updated: April 7, 2025 - Optimization for Render deployment
-
 import os
 import json
 import datetime
 import random
-import os
-
-# Check if we're running on Render
-IS_PRODUCTION = os.environ.get('RENDER', False)
-
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -298,15 +290,6 @@ def get_users():
     users = User.query.all()
     return jsonify([user.to_dict() for user in users])
 
-@app.route('/health')
-def health():
-    return "OK", 200
-
-# Directly serve CSS - this helps ensure CSS content type is set correctly
-@app.route('/static/styles.css')
-def serve_css():
-    return send_from_directory('static', 'styles.css')
-
 # Placeholder images for avatars - direct serving for compatibility
 @app.route('/static/avatar1.png')
 def serve_avatar1():
@@ -339,21 +322,13 @@ os.makedirs(os.path.join(basedir, 'templates'), exist_ok=True)
 
 # Create DB tables and sample data
 def init_db():
+    # Force recreate the database to ensure we have the sample data
     db_path = os.path.join(basedir, 'commercial_ai_experiments.db')
-    
-    # In production (on Render), don't recreate the database every time
-    if IS_PRODUCTION:
-        # Just make sure tables exist
-        with app.app_context():
-            db.create_all()
-    else:
-        # In development (your computer), you might want to start fresh
-        if os.path.exists(db_path):
-            os.remove(db_path)
-        
-        with app.app_context():
-            db.create_all()
-            # Add your sample data here
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
+    with app.app_context():
+        db.create_all()
         
         # Create sample users with departments
         users = [
@@ -409,276 +384,4 @@ def init_db():
                 "duration_weeks": 4,
                 "duration_days": 2,
                 "significance": "Medium",
-                "analysis_type": "Multivariate",
-                "owners": [user1]
-            },
-            {
-                "name": "Adobe vs Salesforce Marketing Cloud",
-                "experiment_type": "Fixed Horizon",
-                "state": "Running",
-                "department": "Marketing",
-                "stage": "Pilot",
-                "impact_value": 5.3,
-                "impact_positive_bound": 7.1,
-                "impact_negative_bound": -1.5,
-                "confidence": 88.4,
-                "progress": 75,
-                "participants_count": 26,
-                "participants_target": 30,
-                "sample_size_reached": False,
-                "duration_weeks": 8,
-                "duration_days": 0,
-                "significance": "Medium",
-                "analysis_type": "Vendor Comparison",
-                "owners": [user1, user5]
-            },
-            
-            # Sales AI experiments
-            {
-                "name": "Lead Scoring Algorithm Update",
-                "experiment_type": "Group Sequential",
-                "state": "Running",
-                "department": "Sales",
-                "stage": "Scale",
-                "impact_value": 18.7,
-                "impact_positive_bound": 22.3,
-                "impact_negative_bound": -1.1,
-                "confidence": 99.7,
-                "progress": 100,
-                "participants_count": 42,
-                "participants_target": 40,
-                "sample_size_reached": True,
-                "duration_weeks": 12,
-                "duration_days": 0,
-                "significance": "High",
-                "analysis_type": "A/B Test",
-                "owners": [user2]
-            },
-            {
-                "name": "HubSpot vs Salesforce CRM Integration",
-                "experiment_type": "Fixed Horizon",
-                "state": "Stopped",
-                "department": "Sales",
-                "stage": "Pre-launch",
-                "impact_value": -2.3,
-                "impact_positive_bound": 1.8,
-                "impact_negative_bound": -5.6,
-                "confidence": 87.2,
-                "progress": 65,
-                "participants_count": 18,
-                "participants_target": 30,
-                "sample_size_reached": False,
-                "duration_weeks": 4,
-                "duration_days": 5,
-                "significance": "Low",
-                "analysis_type": "Vendor Comparison",
-                "owners": [user2, user5]
-            },
-            {
-                "name": "Sales Conversation Intelligence",
-                "experiment_type": "Fixed Horizon",
-                "state": "Running",
-                "department": "Sales",
-                "stage": "Discovery",
-                "impact_value": 4.5,
-                "impact_positive_bound": 6.8,
-                "impact_negative_bound": -1.2,
-                "confidence": 58.4,
-                "progress": 28,
-                "participants_count": 12,
-                "participants_target": 35,
-                "sample_size_reached": False,
-                "duration_weeks": 7,
-                "duration_days": 0,
-                "significance": "Medium",
-                "analysis_type": "Feature Flag",
-                "owners": [user2, user1]
-            },
-            
-            # Procurement AI experiments
-            {
-                "name": "Spend Analytics Dashboard",
-                "experiment_type": "Fixed Horizon",
-                "state": "Running",
-                "department": "Procurement",
-                "stage": "Pilot",
-                "impact_value": 9.6,
-                "impact_positive_bound": 11.2,
-                "impact_negative_bound": -0.7,
-                "confidence": 98.9,
-                "progress": 94,
-                "participants_count": 45,
-                "participants_target": 45,
-                "sample_size_reached": True,
-                "duration_weeks": 10,
-                "duration_days": 4,
-                "significance": "High",
-                "analysis_type": "A/B Test",
-                "owners": [user3]
-            },
-            {
-                "name": "Coupa vs SAP Ariba for PO Processing",
-                "experiment_type": "Group Sequential",
-                "state": "Running",
-                "department": "Procurement",
-                "stage": "Phase 3",
-                "impact_value": 7.8,
-                "impact_positive_bound": 9.5,
-                "impact_negative_bound": -1.4,
-                "confidence": 95.6,
-                "progress": 77,
-                "participants_count": 28,
-                "participants_target": 30,
-                "sample_size_reached": False,
-                "duration_weeks": 9,
-                "duration_days": 1,
-                "significance": "Medium",
-                "analysis_type": "Vendor Comparison",
-                "owners": [user3, user5]
-            },
-            {
-                "name": "Supplier Risk Assessment Model",
-                "experiment_type": "Fixed Horizon",
-                "state": "Completed",
-                "department": "Procurement",
-                "stage": "Scale",
-                "impact_value": 21.4,
-                "impact_positive_bound": 24.8,
-                "impact_negative_bound": -0.8,
-                "confidence": 99.9,
-                "progress": 100,
-                "participants_count": 30,
-                "participants_target": 30,
-                "sample_size_reached": True,
-                "duration_weeks": 16,
-                "duration_days": 3,
-                "significance": "High",
-                "analysis_type": "Custom",
-                "owners": [user3, user4]
-            },
-            
-            # Operations AI experiments
-            {
-                "name": "Real-time Inventory Prediction",
-                "experiment_type": "Group Sequential",
-                "state": "Running",
-                "department": "Operations",
-                "stage": "Phase 2",
-                "impact_value": 8.9,
-                "impact_positive_bound": 10.5,
-                "impact_negative_bound": -1.8,
-                "confidence": 97.3,
-                "progress": 72,
-                "participants_count": 31,
-                "participants_target": 40,
-                "sample_size_reached": False,
-                "duration_weeks": 11,
-                "duration_days": 0,
-                "significance": "High",
-                "analysis_type": "Multivariate",
-                "owners": [user4]
-            },
-            {
-                "name": "Blue Yonder vs Manhattan Warehouse AI",
-                "experiment_type": "Fixed Horizon",
-                "state": "Running",
-                "department": "Operations",
-                "stage": "Discovery",
-                "impact_value": 3.2,
-                "impact_positive_bound": 5.4,
-                "impact_negative_bound": -2.1,
-                "confidence": 67.7,
-                "progress": 32,
-                "participants_count": 16,
-                "participants_target": 40,
-                "sample_size_reached": False,
-                "duration_weeks": 5,
-                "duration_days": 2,
-                "significance": "Medium",
-                "analysis_type": "Vendor Comparison",
-                "owners": [user4, user5]
-            },
-            {
-                "name": "Delivery Route Optimization",
-                "experiment_type": "Fixed Horizon",
-                "state": "Completed",
-                "department": "Operations",
-                "stage": "Scale",
-                "impact_value": 15.3,
-                "impact_positive_bound": 17.8,
-                "impact_negative_bound": -1.2,
-                "confidence": 99.8,
-                "progress": 100,
-                "participants_count": 35,
-                "participants_target": 35,
-                "sample_size_reached": True,
-                "duration_weeks": 14,
-                "duration_days": 2,
-                "significance": "High",
-                "analysis_type": "A/B Test",
-                "owners": [user4, user3]
-            },
-            
-            # IT/Cross-functional AI experiments
-            {
-                "name": "Internal vs Cloud ML Models",
-                "experiment_type": "Fixed Horizon",
-                "state": "Running",
-                "department": "IT",
-                "stage": "Phase 1",
-                "impact_value": 6.8,
-                "impact_positive_bound": 8.9,
-                "impact_negative_bound": -1.6,
-                "confidence": 91.2,
-                "progress": 58,
-                "participants_count": 24,
-                "participants_target": 40,
-                "sample_size_reached": False,
-                "duration_weeks": 13,
-                "duration_days": 0,
-                "significance": "Medium",
-                "analysis_type": "Vendor Comparison",
-                "owners": [user5, user1]
-            },
-            {
-                "name": "Azure ML vs AWS Sagemaker",
-                "experiment_type": "Group Sequential",
-                "state": "Running",
-                "department": "IT",
-                "stage": "Pre-launch",
-                "impact_value": 2.4,
-                "impact_positive_bound": 4.7,
-                "impact_negative_bound": -2.4,
-                "confidence": 73.5,
-                "progress": 40,
-                "participants_count": 18,
-                "participants_target": 36,
-                "sample_size_reached": False,
-                "duration_weeks": 8,
-                "duration_days": 3,
-                "significance": "Low",
-                "analysis_type": "Vendor Comparison",
-                "owners": [user5]
-            }
-        ]
-        
-        # Create sample experiment objects
-        experiment_objects = []
-        for exp_data in experiments:
-            owners = exp_data.pop('owners')
-            exp = Experiment(**exp_data)
-            for owner in owners:
-                exp.owners.append(owner)
-            experiment_objects.append(exp)
-        
-        db.session.add_all(experiment_objects)
-        db.session.commit()
-
-# Initialize the database
-init_db()
-
-if __name__ == '__main__':
-    # For local development
-    print("Starting Commercial AI Experimentation Platform...")
-    print("Access the application at http://localhost:8080")
-    app.run(debug=True, host='0.0.0.0', port=8080)
+                "analysis_type":
