@@ -293,6 +293,10 @@ def get_users():
     users = User.query.all()
     return jsonify([user.to_dict() for user in users])
 
+@app.route('/health')
+def health():
+    return "OK", 200
+
 # Directly serve CSS - this helps ensure CSS content type is set correctly
 @app.route('/static/styles.css')
 def serve_css():
